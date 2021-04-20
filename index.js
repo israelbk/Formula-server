@@ -16,7 +16,7 @@ io.on("connection", (socket) => {
 	port.on("data", function (data) {
 		let parsedData = parseData(data);
 		if (parsedData) {
-			console.log(parsedData);
+			// console.log(parsedData);
 			socket.emit("message", parsedData);
 		}
 	});
