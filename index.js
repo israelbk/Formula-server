@@ -16,6 +16,7 @@ io.on("connection", (socket) => {
 	port.on("data", function (data) {
 		let parsedData = parseData(data);
 		if (parsedData) {
+			console.log(parsedData);
 			socket.emit("message", parsedData);
 		}
 	});
@@ -35,56 +36,36 @@ function parseData(data) {
 	let dataValue = +decodeURIComponent(data.slice(1, 4));
 	switch (data[0]) {
 		case 67:
-			if (dataValue > 1 && dataValue < 0) {
-				return { key: "cerror", value: 0 };
-			}
-			return { key: "cerror", value: dataValue };
+			return getBoolValue("cerror", dataValue);
 		case 80:
-			if (dataValue > 0 && dataValue < 255) {
-				return { key: "pedal", value: dataValue };
-			}
-			break;
+			return getNumberValue("pedal", dataValue, 0, 255);
 		case 82:
-			if (dataValue > 0 && dataValue < 10000) {
-				return { key: "rpm", value: dataValue };
-			}
-			break;
+			return getNumberValue("rpm", dataValue, 0, 10000);
 		case 83:
-			if (dataValue > 0 && dataValue < 90) {
-				return { key: "speed", value: dataValue };
-			}
-			break;
+			return getNumberValue("speed", dataValue, 0, 90);
 		case 84:
-			if (dataValue > 0 && dataValue < 255) {
-				return { key: "thorttle", value: dataValue };
-			}
-			break;
+			return getNumberValue("thorttle", dataValue, 0, 255);
 		case 86:
-			if (dataValue > 0 && dataValue < 24) {
-				return { key: "voltage", value: dataValue };
-			}
-			break;
+			return getNumberValue("voltage", dataValue, 0, 24);
 		case 98:
-			if (dataValue > 1 && dataValue < 0) {
-				return { key: "brake", value: 0 };
-			}
-			return { key: "brake", value: dataValue };
+			return getBoolValue("brake", dataValue);
 		case 112:
-			if (dataValue > 1 && dataValue < 0) {
-				return { key: "perror", value: 0 };
-			}
-			return { key: "perror", value: dataValue };
+			return getBoolValue("perror", dataValue);
 		case 115:
-			if (dataValue > 1 && dataValue < 0) {
-				return { key: "bspd", value: 0 };
-			}
-			return { key: "bspd", value: dataValue };
+			return getBoolValue("bspd", dataValue);
 		case 116:
-			if (dataValue > 1 && dataValue < 0) {
-				return { key: "terror", value: 0 };
-			}
-			return { key: "terror", value: dataValue };
-		// default:
-		// 	return { key: data[0], value: dataValue };
+			return getBoolValue("terror", dataValue);
+		default:
+			return undefined;
 	}
+}
+
+function getBoolValue(keyString, dataValue) {
+	return { key: keyString, value: dataValue == 1 };
+}
+
+function getNumberValue(keyString, dataValue, minBound, maxBound) {
+	return dataValue > minBound && dataValue < maxBound
+		? { key: keyString, value: dataValue }
+		: undefined;
 }
