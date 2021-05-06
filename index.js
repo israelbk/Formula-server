@@ -14,9 +14,9 @@ const port = new SerialPort("COM6", {
 io.on("connection", (socket) => {
     // Switches the port into "flowing mode"
     port.on("data", function(data) {
-        let parsedData = parseData(data);
+        const parsedData = parseData(data);
         if (parsedData) {
-            console.log(parsedData);
+            // console.log(parsedData);
             socket.emit("message", parsedData);
         }
     });
@@ -32,40 +32,36 @@ http.listen(3000, () => {
     console.log("listening on *:3000");
 });
 
-var parseData = (data) => {
-    let dataValue = +decodeURIComponent(data.slice(1, 4));
+const parseData = (data) => {
+    const dataValue = +decodeURIComponent(data.slice(1, 4));
     switch (data[0]) {
         case 67:
-            return getBoolValue("cerror", dataValue);
+            return { key: "cerror", value: dataValue };
         case 80:
-            return getNumberValue("pedal", dataValue, 0, 255);
+            return getValidatedValue("pedal", dataValue, 0, 255);
         case 82:
-            return getNumberValue("rpm", dataValue, 0, 10000);
+            return getValidatedValue("rpm", dataValue, 0, 10000);
         case 83:
-            return getNumberValue("speed", dataValue, 0, 90);
+            return getValidatedValue("speed", dataValue, 0, 90);
         case 84:
-            return getNumberValue("thorttle", dataValue, 0, 255);
+            return getValidatedValue("thorttle", dataValue, 0, 255);
         case 86:
-            return getNumberValue("voltage", dataValue, 0, 24);
+            return getValidatedValue("voltage", dataValue, 0, 24);
         case 98:
-            return getBoolValue("brake", dataValue);
+            return { key: "brake", value: dataValue };
         case 112:
-            return getBoolValue("perror", dataValue);
+            return { key: "perror", value: dataValue };
         case 115:
-            return getBoolValue("bspd", dataValue);
+            return { key: "bspd", value: dataValue };
         case 116:
-            return getBoolValue("terror", dataValue);
+            return { key: "terror", value: dataValue };
         default:
             return undefined;
     }
 };
 
-var getBoolValue = (keyString, dataValue) => {
-    return { key: keyString, value: dataValue == 1 };
-};
-
-var getNumberValue = (keyString, dataValue, minBound, maxBound) => {
-    return dataValue > minBound && dataValue < maxBound ?
+const getValidatedValue = (keyString, dataValue, minBound, maxBound) => {
+    return dataValue >= minBound && dataValue <= maxBound ?
         { key: keyString, value: dataValue } :
         undefined;
 };
