@@ -7,61 +7,102 @@ const io = require("socket.io")(http, {
     },
 });
 
-const port = new SerialPort("COM6", {
+const port = new SerialPort("COM9", {
     baudRate: 115200,
 });
 
+// Represents the Data initials that we want to extract out of each package received.
+const relevantData = [
+    "P",
+    "T",
+    "S",
+    "B",
+    "R",
+    "M",
+    "I",
+    "E",
+    "L",
+    "V",
+    "S",
+    "b",
+    "t",
+    "C",
+];
+
 io.on("connection", (socket) => {
     // Switches the port into "flowing mode"
-    port.on("data", function(data) {
-        const parsedData = parseData(data);
-        if (parsedData) {
-            // console.log(parsedData);
-            socket.emit("message", parsedData);
-        }
-    });
+    port.on("data", (data) =>
+        socket.emit("message", Object.fromEntries(parseData(data)))
+    );
 
     console.log("a user connected");
 
-    socket.on("disconnect", () => {
-        console.log("user disconnected");
-    });
+    socket.on("disconnect", () => console.log("user disconnected"));
 });
 
-http.listen(3000, () => {
-    console.log("listening on *:3000");
-});
+http.listen(3000, () => console.log("listening on *:3000"));
 
 const parseData = (data) => {
-    const dataValue = +decodeURIComponent(data.slice(1, 4));
-    switch (data[0]) {
-        case 67:
-            return { key: "cerror", value: dataValue };
-        case 80:
-            return getValidatedValue("pedal", dataValue, 0, 255);
-        case 82:
-            return getValidatedValue("rpm", dataValue, 0, 10000);
-        case 83:
-            return getValidatedValue("speed", dataValue, 0, 90);
-        case 84:
-            return getValidatedValue("thorttle", dataValue, 0, 255);
-        case 86:
-            return getValidatedValue("voltage", dataValue, 0, 24);
-        case 98:
-            return { key: "brake", value: dataValue };
-        case 112:
-            return { key: "perror", value: dataValue };
-        case 115:
-            return { key: "bspd", value: dataValue };
-        case 116:
-            return { key: "terror", value: dataValue };
+    return extractLastData(decodeURIComponent(data));
+};
+
+const extractLastData = (rawData) => {
+    const dataFoundSet = new Map();
+    const rawDataArray = rawData.split("\n");
+    let foundLettersCount = 0;
+
+    // Iterates over the data from the end to get most updated value.
+    for (i = rawDataArray.length - 1; i >= 0; i--) {
+        const currentChar = rawDataArray[i][0];
+
+        // A data need to add to the Map.
+        if (
+            relevantData.includes(currentChar) &&
+            !dataFoundSet.has(getDisplayString(currentChar))
+        ) {
+            // Add the data to the Map.
+            dataFoundSet.set(
+                getDisplayString(currentChar), +rawDataArray[i].substring(1)
+            );
+
+            // Exit loop if we have all the data needed
+            if (++foundLettersCount === relevantData.length) return dataFoundSet;
+        }
+    }
+    return dataFoundSet;
+};
+
+const getDisplayString = (firstChar) => {
+    switch (firstChar) {
+        case "b":
+            return "brake";
+        case "B":
+            return "bspd";
+        case "C":
+            return "cerror";
+        case "E":
+            return "coolent";
+        case "I":
+            return "inlet";
+        case "L":
+            return "lambda";
+        case "M":
+            return "map";
+        case "p":
+            return "perror";
+        case "P":
+            return "pedal";
+        case "R":
+            return "rpm";
+        case "S":
+            return "speed";
+        case "T":
+            return "thorttle";
+        case "t":
+            return "terror";
+        case "V":
+            return "voltage";
         default:
             return undefined;
     }
-};
-
-const getValidatedValue = (keyString, dataValue, minBound, maxBound) => {
-    return dataValue >= minBound && dataValue <= maxBound ?
-        { key: keyString, value: dataValue } :
-        undefined;
 };
