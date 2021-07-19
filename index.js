@@ -7,26 +7,13 @@ const io = require("socket.io")(http, {
     },
 });
 
-const port = new SerialPort("COM9", {
+const port = new SerialPort("/dev/ttyUSB0", {
     baudRate: 115200,
 });
 
 // Represents the Data initials that we want to extract out of each package received.
 const relevantData = [
-    "P",
-    "T",
-    "S",
-    "B",
-    "R",
-    "M",
-    "I",
-    "E",
-    "L",
-    "V",
-    "S",
-    "b",
-    "t",
-    "C",
+    "P","T", "t", "p", "V", "c", "E", "M", "I", "L", "b"
 ];
 
 io.on("connection", (socket) => {
@@ -52,11 +39,13 @@ const parseData = (data) => {
 };
 
 const extractLastData = (rawData) => {
+    console.log(rawData);
+
     const dataFoundSet = new Map();
     const rawDataArray = rawData.split("\n");
     let foundLettersCount = 0;
 
-    // Iterates over the data from the end to get most updated value.
+   // Iterates over the data from the end to get most updated value.
     for (i = rawDataArray.length - 1; i >= 0; i--) {
         const currentChar = rawDataArray[i][0];
 
@@ -85,7 +74,7 @@ const getDisplayString = (firstChar) => {
             return "bspd";
         case "C":
             return "cerror";
-        case "E":
+        case "c":
             return "coolent";
         case "I":
             return "inlet";
@@ -97,7 +86,7 @@ const getDisplayString = (firstChar) => {
             return "perror";
         case "P":
             return "pedal";
-        case "R":
+        case "E":
             return "rpm";
         case "S":
             return "speed";
